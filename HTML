@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Sistem Persediaan</title>
+
+    <link rel="stylesheet" href="css/style.css">
+
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body>
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+            <div class="logo-icon">📦</div>
+
+            <div>
+                <h2>StockApp</h2>
+                <span>Inventory System</span>
+            </div>
+        </div>
+
+        <nav>
+
+            <button class="menu-btn active"
+                onclick="showPage('dashboard', this)">
+                🏠 Dashboard
+            </button>
+
+            <button class="menu-btn"
+                onclick="showPage('barang', this)">
+                📦 Data Barang
+            </button>
+
+            <button class="menu-btn"
+                onclick="showPage('masuk', this)">
+                📥 Barang Masuk
+            </button>
+
+            <button class="menu-btn"
+                onclick="showPage('keluar', this)">
+                📤 Barang Keluar
+            </button>
+
+        </nav>
+
+    </aside>
+
+
+    <!-- MAIN -->
+
+    <main class="main">
+
+        <!-- HEADER -->
+
+        <header>
+
+            <div>
+                <h1 id="pageTitle">
+                    Dashboard
+                </h1>
+
+                <p>
+                    Sistem informasi persediaan barang
+                </p>
+            </div>
+
+            <div class="user">
+                👤 Admin
+            </div>
+
+        </header>
+
+
+        <!-- DASHBOARD -->
+
+        <section id="dashboard" class="page active">
+
+            <div class="cards">
+
+                <div class="card">
+                    <div>
+                        <span>Total Barang</span>
+                        <h2 id="totalBarang">0</h2>
+                    </div>
+
+                    <div class="card-icon">
+                        📦
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div>
+                        <span>Total Stok</span>
+                        <h2 id="totalStok">0</h2>
+                    </div>
+
+                    <div class="card-icon">
+                        📊
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div>
+                        <span>Barang Masuk</span>
+                        <h2 id="totalMasuk">0</h2>
+                    </div>
+
+                    <div class="card-icon">
+                        📥
+                    </div>
+                </div>
+
+
+                <div class="card">
+                    <div>
+                        <span>Barang Keluar</span>
+                        <h2 id="totalKeluar">0</h2>
+                    </div>
+
+                    <div class="card-icon">
+                        📤
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <h2>Data Persediaan</h2>
+
+                    <button onclick="loadDashboard()">
+                        🔄 Refresh
+                    </button>
+
+                </div>
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Kode</th>
+                            <th>Nama Barang</th>
+                            <th>Kategori</th>
+                            <th>Satuan</th>
+                            <th>Stok</th>
+                            <th>Harga</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="dashboardTable">
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- DATA BARANG -->
+
+        <section id="barang" class="page">
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h2>Data Barang</h2>
+                        <p>Kelola data barang persediaan</p>
+                    </div>
+
+                    <button class="primary"
+                        onclick="openBarangForm()">
+                        + Tambah Barang
+                    </button>
+
+                </div>
+
+
+                <div class="search">
+
+                    <input
+                        type="text"
+                        id="searchBarang"
+                        placeholder="Cari barang..."
+                        onkeyup="searchBarang()">
+
+                </div>
+
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Kode</th>
+                            <th>Nama Barang</th>
+                            <th>Kategori</th>
+                            <th>Satuan</th>
+                            <th>Stok</th>
+                            <th>Harga</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="barangTable">
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </section>
+
+
+        <!-- BARANG MASUK -->
+
+        <section id="masuk" class="page">
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h2>Barang Masuk</h2>
+                        <p>Transaksi penambahan stok</p>
+                    </div>
+
+                </div>
+
+
+                <form id="formMasuk">
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+
+                            <label>
+                                Tanggal
+                            </label>
+
+                            <input
+                                type="date"
+                                id="tanggalMasuk"
+                                required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Barang
+                            </label>
+
+                            <select
+                                id="barangMasuk"
+                                required>
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Jumlah
+                            </label>
+
+                            <input
+                                type="number"
+                                id="jumlahMasuk"
+                                min="1"
+                                required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Harga
+                            </label>
+
+                            <input
+                                type="number"
+                                id="hargaMasuk"
+                                min="0"
+                                required>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Keterangan
+                        </label>
+
+                        <textarea
+                            id="keteranganMasuk">
+                        </textarea>
+
+                    </div>
+
+
+                    <button class="primary"
+                        type="submit">
+                        Simpan Barang Masuk
+                    </button>
+
+                </form>
+
+            </div>
+
+        </section>
+
+
+        <!-- BARANG KELUAR -->
+
+        <section id="keluar" class="page">
+
+            <div class="panel">
+
+                <div class="panel-header">
+
+                    <div>
+                        <h2>Barang Keluar</h2>
+                        <p>Transaksi pengurangan stok</p>
+                    </div>
+
+                </div>
+
+
+                <form id="formKeluar">
+
+                    <div class="form-grid">
+
+                        <div class="form-group">
+
+                            <label>
+                                Tanggal
+                            </label>
+
+                            <input
+                                type="date"
+                                id="tanggalKeluar"
+                                required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Barang
+                            </label>
+
+                            <select
+                                id="barangKeluar"
+                                required>
+                            </select>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Jumlah
+                            </label>
+
+                            <input
+                                type="number"
+                                id="jumlahKeluar"
+                                min="1"
+                                required>
+
+                        </div>
+
+
+                        <div class="form-group">
+
+                            <label>
+                                Harga
+                            </label>
+
+                            <input
+                                type="number"
+                                id="hargaKeluar"
+                                min="0"
+                                required>
+
+                        </div>
+
+                    </div>
+
+
+                    <div class="form-group">
+
+                        <label>
+                            Keterangan
+                        </label>
+
+                        <textarea
+                            id="keteranganKeluar">
+                        </textarea>
+
+                    </div>
+
+
+                    <button class="primary"
+                        type="submit">
+                        Simpan Barang Keluar
+                    </button>
+
+                </form>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- MODAL BARANG -->
+
+    <div id="barangModal" class="modal">
+
+        <div class="modal-content">
+
+            <div class="modal-header">
+
+                <h2>Tambah Barang</h2>
+
+                <button onclick="closeBarangForm()">
+                    ✕
+                </button>
+
+            </div>
+
+
+            <form id="formBarang">
+
+                <div class="form-group">
+
+                    <label>Kode Barang</label>
+
+                    <input
+                        type="text"
+                        id="kodeBarang"
+                        required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Nama Barang</label>
+
+                    <input
+                        type="text"
+                        id="namaBarang"
+                        required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Kategori</label>
+
+                    <input
+                        type="text"
+                        id="kategoriBarang">
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Satuan</label>
+
+                    <input
+                        type="text"
+                        id="satuanBarang"
+                        placeholder="Unit / Box / Rim"
+                        required>
+
+                </div>
+
+
+                <div class="form-group">
+
+                    <label>Harga</label>
+
+                    <input
+                        type="number"
+                        id="hargaBarang"
+                        min="0"
+                        required>
+
+                </div>
+
+
+                <button
+                    class="primary"
+                    type="submit">
+
+                    Simpan Barang
+
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <script src="js/app.js"></script>
+
+</body>
+
+</html>

@@ -1,0 +1,745 @@
+// =========================================
+// KONFIGURASI SUPABASE
+// =========================================
+
+const SUPABASE_URL = "MASUKKAN_SUPABASE_URL";
+
+const SUPABASE_ANON_KEY = "MASUKKAN_SUPABASE_ANON_KEY";
+
+
+const db = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY
+);
+
+
+// =========================================
+// NAVIGASI
+// =========================================
+
+function showPage(pageId, button) {
+
+    document.querySelectorAll(".page")
+        .forEach(page => {
+            page.classList.remove("active");
+        });
+
+    document.getElementById(pageId)
+        .classList.add("active");
+
+
+    document.querySelectorAll(".menu-btn")
+        .forEach(btn => {
+            btn.classList.remove("active");
+        });
+
+    button.classList.add("active");
+
+
+    const titles = {
+        dashboard: "Dashboard",
+        barang: "Data Barang",
+        masuk: "Barang Masuk",
+        keluar: "Barang Keluar"
+    };
+
+    document.getElementById("pageTitle")
+        .textContent = titles[pageId];
+
+
+    if (pageId === "dashboard") {
+        loadDashboard();
+    }
+
+    if (pageId === "barang") {
+        loadBarang();
+    }
+
+    if (pageId === "masuk" ||
+        pageId === "keluar") {
+
+        loadBarangSelect();
+
+    }
+}
+
+
+// =========================================
+// DASHBOARD
+// =========================================
+
+async function loadDashboard() {
+
+    const { data, error } = await db
+        .from("barang")
+        .select("*")
+        .order("id_barang");
+
+
+    if (error) {
+
+        console.error(error);
+
+        alert("Gagal mengambil data barang");
+
+        return;
+    }
+
+
+    const totalBarang = data.length;
+
+
+    const totalStok = data.reduce(
+        (total, item) =>
+            total + item.stok,
+        0
+    );
+
+
+    document.getElementById(
+        "totalBarang"
+    ).textContent = totalBarang;
+
+
+    document.getElementById(
+        "totalStok"
+    ).textContent = totalStok;
+
+
+    const tbody =
+        document.getElementById(
+            "dashboardTable"
+        );
+
+
+    tbody.innerHTML = "";
+
+
+    data.forEach(item => {
+
+        tbody.innerHTML += `
+
+            <tr>
+
+                <td>
+                    ${item.kode_barang}
+                </td>
+
+                <td>
+                    ${item.nama_barang}
+                </td>
+
+                <td>
+                    ${item.kategori || "-"}
+                </td>
+
+                <td>
+                    ${item.satuan}
+                </td>
+
+                <td>
+                    ${item.stok}
+                </td>
+
+                <td>
+                    Rp ${formatNumber(item.harga)}
+                </td>
+
+            </tr>
+
+        `;
+
+    });
+
+
+    await loadTransactionSummary();
+}
+
+
+// =========================================
+// SUMMARY TRANSAKSI
+// =========================================
+
+async function loadTransactionSummary() {
+
+    const { data, error } = await db
+        .from("transaksi")
+        .select("jenis");
+
+
+    if (error) {
+
+        console.error(error);
+
+        return;
+    }
+
+
+    const masuk = data.filter(
+        x => x.jenis === "MASUK"
+    ).length;
+
+
+    const keluar = data.filter(
+        x => x.jenis === "KELUAR"
+    ).length;
+
+
+    document.getElementById(
+        "totalMasuk"
+    ).textContent = masuk;
+
+
+    document.getElementById(
+        "totalKeluar"
+    ).textContent = keluar;
+}
+
+
+// =========================================
+// LOAD BARANG
+// =========================================
+
+async function loadBarang() {
+
+    const { data, error } = await db
+        .from("barang")
+        .select("*")
+        .order("id_barang");
+
+
+    if (error) {
+
+        console.error(error);
+
+        alert("Gagal mengambil data");
+
+        return;
+    }
+
+
+    const tbody =
+        document.getElementById(
+            "barangTable"
+        );
+
+
+    tbody.innerHTML = "";
+
+
+    data.forEach((item, index) => {
+
+        tbody.innerHTML += `
+
+            <tr>
+
+                <td>${index + 1}</td>
+
+                <td>
+                    ${item.kode_barang}
+                </td>
+
+                <td>
+                    ${item.nama_barang}
+                </td>
+
+                <td>
+                    ${item.kategori || "-"}
+                </td>
+
+                <td>
+                    ${item.satuan}
+                </td>
+
+                <td>
+                    <strong>
+                        ${item.stok}
+                    </strong>
+                </td>
+
+                <td>
+                    Rp ${formatNumber(item.harga)}
+                </td>
+
+            </tr>
+
+        `;
+
+    });
+}
+
+
+// =========================================
+// SEARCH BARANG
+// =========================================
+
+function searchBarang() {
+
+    const keyword =
+        document.getElementById(
+            "searchBarang"
+        ).value.toLowerCase();
+
+
+    document.querySelectorAll(
+        "#barangTable tr"
+    ).forEach(row => {
+
+        row.style.display =
+            row.textContent
+                .toLowerCase()
+                .includes(keyword)
+                ? ""
+                : "none";
+
+    });
+}
+
+
+// =========================================
+// SELECT BARANG
+// =========================================
+
+async function loadBarangSelect() {
+
+    const { data, error } = await db
+        .from("barang")
+        .select(
+            "id_barang, kode_barang, nama_barang, stok"
+        )
+        .order("nama_barang");
+
+
+    if (error) {
+
+        console.error(error);
+
+        return;
+    }
+
+
+    const masuk =
+        document.getElementById(
+            "barangMasuk"
+        );
+
+    const keluar =
+        document.getElementById(
+            "barangKeluar"
+        );
+
+
+    masuk.innerHTML =
+        `<option value="">
+            Pilih Barang
+        </option>`;
+
+
+    keluar.innerHTML =
+        `<option value="">
+            Pilih Barang
+        </option>`;
+
+
+    data.forEach(item => {
+
+        masuk.innerHTML += `
+
+            <option value="${item.id_barang}">
+                ${item.kode_barang} -
+                ${item.nama_barang}
+            </option>
+
+        `;
+
+
+        keluar.innerHTML += `
+
+            <option value="${item.id_barang}">
+                ${item.kode_barang} -
+                ${item.nama_barang}
+                (Stok: ${item.stok})
+            </option>
+
+        `;
+
+    });
+}
+
+
+// =========================================
+// MODAL BARANG
+// =========================================
+
+function openBarangForm() {
+
+    document.getElementById(
+        "barangModal"
+    ).classList.add("show");
+
+}
+
+
+function closeBarangForm() {
+
+    document.getElementById(
+        "barangModal"
+    ).classList.remove("show");
+
+}
+
+
+// =========================================
+// TAMBAH BARANG
+// =========================================
+
+document.getElementById(
+    "formBarang"
+).addEventListener(
+    "submit",
+    async function(e) {
+
+        e.preventDefault();
+
+
+        const barang = {
+
+            kode_barang:
+                document.getElementById(
+                    "kodeBarang"
+                ).value,
+
+            nama_barang:
+                document.getElementById(
+                    "namaBarang"
+                ).value,
+
+            kategori:
+                document.getElementById(
+                    "kategoriBarang"
+                ).value,
+
+            satuan:
+                document.getElementById(
+                    "satuanBarang"
+                ).value,
+
+            harga:
+                Number(
+                    document.getElementById(
+                        "hargaBarang"
+                    ).value
+                )
+
+        };
+
+
+        const { error } = await db
+            .from("barang")
+            .insert([barang]);
+
+
+        if (error) {
+
+            alert(
+                "Gagal menyimpan barang: "
+                + error.message
+            );
+
+            return;
+        }
+
+
+        alert("Barang berhasil ditambahkan");
+
+
+        this.reset();
+
+        closeBarangForm();
+
+        loadBarang();
+
+        loadDashboard();
+
+    }
+);
+
+
+// =========================================
+// BARANG MASUK
+// =========================================
+
+document.getElementById(
+    "formMasuk"
+).addEventListener(
+    "submit",
+    async function(e) {
+
+        e.preventDefault();
+
+
+        const tanggal =
+            document.getElementById(
+                "tanggalMasuk"
+            ).value;
+
+
+        const idBarang =
+            document.getElementById(
+                "barangMasuk"
+            ).value;
+
+
+        const jumlah =
+            Number(
+                document.getElementById(
+                    "jumlahMasuk"
+                ).value
+            );
+
+
+        const harga =
+            Number(
+                document.getElementById(
+                    "hargaMasuk"
+                ).value
+            );
+
+
+        const keterangan =
+            document.getElementById(
+                "keteranganMasuk"
+            ).value;
+
+
+        // INSERT TRANSAKSI
+
+        const { data: transaksi, error } =
+            await db
+                .from("transaksi")
+                .insert([{
+
+                    tanggal,
+                    jenis: "MASUK",
+                    keterangan
+
+                }])
+                .select()
+                .single();
+
+
+        if (error) {
+
+            alert(error.message);
+
+            return;
+        }
+
+
+        // INSERT DETAIL
+
+        const { error: detailError } =
+            await db
+                .from("detail_transaksi")
+                .insert([{
+
+                    id_transaksi:
+                        transaksi.id_transaksi,
+
+                    id_barang:
+                        idBarang,
+
+                    jumlah,
+
+                    harga
+
+                }]);
+
+
+        if (detailError) {
+
+            alert(detailError.message);
+
+            return;
+        }
+
+
+        alert(
+            "Barang masuk berhasil disimpan"
+        );
+
+
+        this.reset();
+
+        loadDashboard();
+
+    }
+);
+
+
+// =========================================
+// BARANG KELUAR
+// =========================================
+
+document.getElementById(
+    "formKeluar"
+).addEventListener(
+    "submit",
+    async function(e) {
+
+        e.preventDefault();
+
+
+        const tanggal =
+            document.getElementById(
+                "tanggalKeluar"
+            ).value;
+
+
+        const idBarang =
+            document.getElementById(
+                "barangKeluar"
+            ).value;
+
+
+        const jumlah =
+            Number(
+                document.getElementById(
+                    "jumlahKeluar"
+                ).value
+            );
+
+
+        const harga =
+            Number(
+                document.getElementById(
+                    "hargaKeluar"
+                ).value
+            );
+
+
+        const keterangan =
+            document.getElementById(
+                "keteranganKeluar"
+            ).value;
+
+
+        // INSERT TRANSAKSI
+
+        const { data: transaksi, error } =
+            await db
+                .from("transaksi")
+                .insert([{
+
+                    tanggal,
+                    jenis: "KELUAR",
+                    keterangan
+
+                }])
+                .select()
+                .single();
+
+
+        if (error) {
+
+            alert(error.message);
+
+            return;
+        }
+
+
+        // INSERT DETAIL
+
+        const { error: detailError } =
+            await db
+                .from("detail_transaksi")
+                .insert([{
+
+                    id_transaksi:
+                        transaksi.id_transaksi,
+
+                    id_barang:
+                        idBarang,
+
+                    jumlah,
+
+                    harga
+
+                }]);
+
+
+        if (detailError) {
+
+            alert(
+                "Gagal: "
+                + detailError.message
+            );
+
+            return;
+        }
+
+
+        alert(
+            "Barang keluar berhasil disimpan"
+        );
+
+
+        this.reset();
+
+        loadDashboard();
+
+    }
+);
+
+
+// =========================================
+// FORMAT ANGKA
+// =========================================
+
+function formatNumber(number) {
+
+    return new Intl.NumberFormat(
+        "id-ID"
+    ).format(number);
+
+}
+
+
+// =========================================
+// TANGGAL DEFAULT
+// =========================================
+
+function setDefaultDate() {
+
+    const today =
+        new Date()
+        .toISOString()
+        .split("T")[0];
+
+
+    document.getElementById(
+        "tanggalMasuk"
+    ).value = today;
+
+
+    document.getElementById(
+        "tanggalKeluar"
+    ).value = today;
+
+}
+
+
+// =========================================
+// INITIAL LOAD
+// =========================================
+
+document.addEventListener(
+    "DOMContentLoaded",
+    function() {
+
+        setDefaultDate();
+
+        loadDashboard();
+
+    }
+);
